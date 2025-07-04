@@ -1036,7 +1036,7 @@ class UserPanel:
             fg='#2c3e50',
             wrap='word',
             padx=10,
-            pady=10
+            pady=2
         )
         
         scrollbar = ttk.Scrollbar(content_frame, orient='vertical', command=text_widget.yview)
