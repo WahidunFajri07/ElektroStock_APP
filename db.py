@@ -32,7 +32,6 @@ class Database:
             self.connection.close()
     
     # def hash_password(self, password):
-    #     """Hash password menggunakan SHA-256"""
     #     return hashlib.sha256(password.encode()).hexdigest()
     def create_pengguna(self, username, password, role):
         query = "INSERT INTO pengguna (username, password, role) VALUES (%s, %s, %s)"

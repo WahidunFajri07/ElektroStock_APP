@@ -268,6 +268,9 @@ class AdminPanel:
                  command=self.delete_customer).pack(side='left', padx=5)
         tk.Button(btn_frame, text="Clear Fields", bg='#95a5a6', fg='white',
                  command=self.clear_customer_fields).pack(side='left', padx=5)
+        tk.Button(btn_frame, text="Refresh", bg='#3498db', fg='white',
+                 command=self.refresh_customers).pack(side='left', padx=5)
+        
         
         # Table Frame
         table_frame = tk.LabelFrame(parent, text="Customer List", font=('Arial', 10, 'bold'))
@@ -340,6 +343,8 @@ class AdminPanel:
                  command=self.delete_barang).pack(side='left', padx=5)
         tk.Button(btn_frame, text="Clear Fields", bg='#95a5a6', fg='white',
                  command=self.clear_barang_fields).pack(side='left', padx=5)
+        tk.Button(btn_frame, text="Refresh", bg='#3498db', fg='white',
+                 command=self.refresh_barang).pack(side='left', padx=5)
         
         # Table Frame
         table_frame = tk.LabelFrame(parent, text="Barang List", font=('Arial', 10, 'bold'))
@@ -591,6 +596,12 @@ class AdminPanel:
     def clear_customer_fields(self):
         for entry in self.customer_entries.values():
             entry.delete(0, tk.END)
+
+    def refresh_customers(self):
+        self.load_customers()
+        self.load_combo_data()
+        self.clear_customer_fields()
+        messagebox.showinfo("Info", "Data refreshed successfully!")
     
     # Barang CRUD Methods
     def load_barang(self):
@@ -698,6 +709,12 @@ class AdminPanel:
     def clear_barang_fields(self):
         for entry in self.barang_entries.values():
             entry.delete(0, tk.END)
+
+    def refresh_barang(self):
+        self.load_barang()
+        self.load_combo_data()
+        self.clear_barang_fields()
+        messagebox.showinfo("Info", "Data refreshed successfully!")
     
     # Transaksi Methods
     # Fixed Transaksi Methods
