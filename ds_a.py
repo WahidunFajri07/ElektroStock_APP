@@ -147,8 +147,19 @@ class AdminPanel:
         
         # Load data and start auto-refresh
         self.update_dashboard()
-        self.auto_refresh_dashboard()  # Sekarang aman
         
+        
+        # Refresh button
+        refresh_btn = tk.Button(
+            parent,
+            text="Refresh Data",
+            font=('Arial', 12, 'bold'),
+            bg='#3498db',
+            fg='white',
+            cursor='hand2',
+            command=self.refresh_dashboard
+        )
+        refresh_btn.pack(pady=20)
 
     def update_dashboard(self):
         """Update dashboard data"""
@@ -180,26 +191,30 @@ class AdminPanel:
         except Exception as e:
             print(f"Error updating dashboard: {e}")
 
-    def auto_refresh_dashboard(self):
-        """Auto refresh setiap 5 detik dengan pengecekan keamanan"""
-        def safe_refresh():
-            try:
-                # Cek apakah window masih ada dan valid
-                if (hasattr(self, 'window') and 
-                    hasattr(self, 'dashboard_parent') and 
-                    self.window.winfo_exists() and 
-                    self.dashboard_parent.winfo_exists()):
-                    
-                    self.update_dashboard()
-                    # Schedule next refresh
-                    self.refresh_job = self.dashboard_parent.after(5000, safe_refresh)
-                
-            except (tk.TclError, AttributeError):
-                # Window sudah ditutup atau error lain, hentikan refresh
-                return
+    def refresh_dashboard(self):
+        """Refresh dashboard data"""
+        try:
+            # Get fresh statistics
+            customers = self.db.get_all_customers()
+            barang = self.db.get_all_barang()
+            transaksi = self.db.get_all_transaksi()
+            
+            # Clear recent transactions
+            for item in self.recent_tree.get_children():
+                self.recent_tree.delete(item)
+            
+            # Add recent transactions (last 10)
+            sorted_transaksi = sorted(transaksi, key=lambda x: int(x[0]), reverse=True)
+            recent_transaksi = sorted_transaksi[:10] if len(sorted_transaksi) >= 10 else sorted_transaksi
+            
+            for trans in recent_transaksi:
+                self.recent_tree.insert('', 'end', values=trans)
         
-        # Mulai refresh cycle
-        safe_refresh()
+            
+            messagebox.showinfo("Success", "Dashboard data refreshed successfully!")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to refresh dashboard: {str(e)}")
 
     def create_stat_card(self, parent, title, value, color, column):
         card_frame = tk.Frame(parent, bg=color, relief='raised', bd=2)
@@ -271,7 +286,20 @@ class AdminPanel:
         tk.Button(btn_frame, text="Refresh", bg='#3498db', fg='white',
                  command=self.refresh_customers).pack(side='left', padx=5)
         
-        
+        # Action buttons frame
+        action_frame = tk.Frame(parent)
+        action_frame.pack(pady=10)
+        # Print button
+        print_btn = tk.Button(
+            action_frame,
+            text="🖨️ Print Customer List",
+            font=('Arial', 10, 'bold'),
+            bg='#3498db',
+            fg='white',
+            cursor='hand2',
+            command=self.print_customer_list
+        )
+        print_btn.pack(side='left', padx=5)
         # Table Frame
         table_frame = tk.LabelFrame(parent, text="Customer List", font=('Arial', 10, 'bold'))
         table_frame.pack(fill='both', expand=True, padx=20, pady=10)
@@ -298,6 +326,7 @@ class AdminPanel:
         
         # Load data
         self.load_customers()
+
     
     def setup_barang_management(self, parent):
         # Similar structure for barang management
@@ -345,6 +374,22 @@ class AdminPanel:
                  command=self.clear_barang_fields).pack(side='left', padx=5)
         tk.Button(btn_frame, text="Refresh", bg='#3498db', fg='white',
                  command=self.refresh_barang).pack(side='left', padx=5)
+        
+        # Action buttons frame
+        action_frame = tk.Frame(parent)
+        action_frame.pack(pady=10)
+
+        # Print button
+        print_btn = tk.Button(
+            action_frame,
+            text="🖨️ Print Stock Report",
+            font=('Arial', 10, 'bold'),
+            bg='#3498db',
+            fg='white',
+            cursor='hand2',
+            command=self.print_stock_report
+        )
+        print_btn.pack(side='left', padx=5)
         
         # Table Frame
         table_frame = tk.LabelFrame(parent, text="Barang List", font=('Arial', 10, 'bold'))
@@ -436,6 +481,34 @@ class AdminPanel:
                 command=self.clear_transaksi_fields, cursor='hand2', pady=5).pack(side='left', padx=5)
         tk.Button(btn_frame, text="Refresh", bg='#3498db', fg='white', font=('Arial', 8, 'bold'),
                 command=self.refresh_transaksi, cursor='hand2', pady=5).pack(side='left', padx=5)
+        # Action buttons frame
+        action_frame = tk.Frame(parent)
+        action_frame.pack(pady=10)
+        
+        
+        # Print invoice button
+        print_invoice_btn = tk.Button(
+            action_frame,
+            text="🖨️ Print Selected Invoice",
+            font=('Arial', 10, 'bold'),
+            bg='#3498db',
+            fg='white',
+            cursor='hand2',
+            command=self.print_selected_invoice
+        )
+        print_invoice_btn.pack(side='left', padx=5)
+        
+        # Print report button
+        print_report_btn = tk.Button(
+            action_frame,
+            text="📊 Print Transaction Report",
+            font=('Arial', 10, 'bold'),
+            bg='#9b59b6',
+            fg='white',
+            cursor='hand2',
+            command=self.print_transaction_report
+        )
+        print_report_btn.pack(side='left', padx=5)
         
         # Search Frame
         search_frame = tk.Frame(parent)
@@ -602,6 +675,31 @@ class AdminPanel:
         self.load_combo_data()
         self.clear_customer_fields()
         messagebox.showinfo("Info", "Data refreshed successfully!")
+
+    def print_customer_list(self):
+        """Print customer list"""
+        try:
+            customers = self.db.get_all_customers()
+            
+            # Create print content
+            print_content = "CUSTOMER LIST REPORT\n"
+            print_content += "=" * 50 + "\n\n"
+            print_content += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            print_content += f"Total Customers: {len(customers)}\n\n"
+            
+            # Add customer data
+            for customer in customers:
+                print_content += f"ID: {customer[0]}\n"
+                print_content += f"Name: {customer[1]}\n"
+                print_content += f"Address: {customer[2]}\n"
+                print_content += f"Phone: {customer[3]}\n"
+                print_content += "-" * 30 + "\n"
+            
+            # Show print preview
+            self.show_print_preview("Customer List Report", print_content)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate customer report: {str(e)}")
     
     # Barang CRUD Methods
     def load_barang(self):
@@ -715,6 +813,48 @@ class AdminPanel:
         self.load_combo_data()
         self.clear_barang_fields()
         messagebox.showinfo("Info", "Data refreshed successfully!")
+
+    def print_stock_report(self):
+        """Print stock report"""
+        try:
+            barang = self.db.get_all_barang()
+            
+            # Create print content
+            print_content = "STOCK REPORT\n"
+            print_content += "=" * 50 + "\n\n"
+            print_content += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            print_content += f"Total Items: {len(barang)}\n\n"
+            
+            # Categorize items
+            low_stock_items = []
+            normal_stock_items = []
+            
+            for item in barang:
+                stock = int(item[3])
+                if stock <= 10:
+                    low_stock_items.append(item)
+                else:
+                    normal_stock_items.append(item)
+            
+            # Add low stock section
+            if low_stock_items:
+                print_content += "⚠️ LOW STOCK ITEMS (≤10):\n"
+                print_content += "-" * 30 + "\n"
+                for item in low_stock_items:
+                    print_content += f"ID: {item[0]} | {item[1]} | Stock: {item[3]} | Price: Rp {item[2]:,}\n"
+                print_content += "\n"
+            
+            # Add normal stock section
+            print_content += "NORMAL STOCK ITEMS:\n"
+            print_content += "-" * 30 + "\n"
+            for item in normal_stock_items:
+                print_content += f"ID: {item[0]} | {item[1]} | Stock: {item[3]} | Price: Rp {item[2]:,}\n"
+            
+            # Show print preview
+            self.show_print_preview("Stock Report", print_content)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate stock report: {str(e)}")
     
     # Transaksi Methods
     # Fixed Transaksi Methods
@@ -989,21 +1129,186 @@ class AdminPanel:
         except Exception as e:
             pass  # Ignore sorting errors
         
-        def delete_transaksi(self):
-            selection = self.transaksi_tree.selection()
-            if not selection:
-                messagebox.showerror("Error", "Please select a transaksi to delete!")
+    def delete_transaksi(self):
+        selection = self.transaksi_tree.selection()
+        if not selection:
+            messagebox.showerror("Error", "Please select a transaksi to delete!")
+            return
+        
+        if messagebox.askyesno("Confirm", "Are you sure you want to delete this transaksi?"):
+            item = self.transaksi_tree.item(selection[0])
+            transaksi_id = item['values'][0]
+            
+            if self.db.delete_transaksi(transaksi_id):
+                messagebox.showinfo("Success", "Transaksi deleted successfully!")
+                self.load_transaksi()
+            else:
+                messagebox.showerror("Error", "Failed to delete transaksi!")
+
+    def print_selected_invoice(self):
+        """Print selected transaction as invoice"""
+        try:
+            selected_item = self.transaksi_tree.selection()
+            if not selected_item:
+                messagebox.showwarning("Warning", "Please select a transaction to print invoice.")
                 return
             
-            if messagebox.askyesno("Confirm", "Are you sure you want to delete this transaksi?"):
-                item = self.transaksi_tree.item(selection[0])
-                transaksi_id = item['values'][0]
-                
-                if self.db.delete_transaksi(transaksi_id):
-                    messagebox.showinfo("Success", "Transaksi deleted successfully!")
-                    self.load_transaksi()
+            # Get transaction data
+            trans_data = self.transaksi_tree.item(selected_item[0])['values']
+            
+            # Format amount safely
+            try:
+                # Convert amount to string first, then clean it
+                amount_str = str(trans_data[4])
+                # Remove any existing formatting
+                clean_amount = amount_str.replace('Rp', '').replace(',', '').replace('.', '').strip()
+                if clean_amount.isdigit():
+                    formatted_amount = f"Rp {int(clean_amount):,}"
                 else:
-                    messagebox.showerror("Error", "Failed to delete transaksi!")
+                    formatted_amount = str(trans_data[4])
+            except (ValueError, TypeError):
+                formatted_amount = str(trans_data[4])
+            
+            # Create invoice content
+            print_content = "INVOICE\n"
+            print_content += "=" * 50 + "\n\n"
+            print_content += "ElektroStock APP - TRANSACTION INVOICE\n"
+            print_content += f"Invoice ID: INV-{trans_data[0]}\n"
+            print_content += f"Date: {trans_data[5]}\n\n"
+            
+            print_content += "CUSTOMER INFORMATION:\n"
+            print_content += f"Customer: {trans_data[1]}\n\n"
+            
+            print_content += "ITEM DETAILS:\n"
+            print_content += f"Item: {trans_data[2]}\n"
+            print_content += f"Quantity: {trans_data[3]}\n"
+            print_content += f"Total Amount: {formatted_amount}\n\n"
+            
+            print_content += "Thank you for your purchase!\n"
+            print_content += "=" * 50 + "\n"
+            
+            # Show print preview
+            self.show_print_preview(f"Invoice INV-{trans_data[0]}", print_content)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate invoice: {str(e)}")
+    
+    def print_transaction_report(self):
+        """Print transaction report"""
+        try:
+            transaksi = self.db.get_all_transaksi()
+            
+            # Create print content
+            print_content = "TRANSACTION REPORT\n"
+            print_content += "=" * 50 + "\n\n"
+            print_content += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            print_content += f"Total Transactions: {len(transaksi)}\n\n"
+            
+            # Calculate total revenue
+            total_revenue = 0
+            for trans in transaksi:
+                try:
+                    # Remove 'Rp' and commas, then convert to int
+                    amount_str = str(trans[4]).replace('Rp', '').replace(',', '').replace('.', '').strip()
+                    total_revenue += int(amount_str)
+                except (ValueError, TypeError):
+                    continue
+            
+            print_content += f"Total Revenue: Rp {total_revenue:,}\n\n"
+            
+            # Add transaction details
+            print_content += "TRANSACTION DETAILS:\n"
+            print_content += "-" * 50 + "\n"
+            
+            for trans in transaksi:
+                print_content += f"ID: {trans[0]} | Customer: {trans[1]} | Item: {trans[2]}\n"
+                print_content += f"Qty: {trans[3]} | Amount: {trans[4]} | Date: {trans[5]}\n"
+                print_content += "-" * 30 + "\n"
+            
+            # Show print preview
+            self.show_print_preview("Transaction Report", print_content)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate transaction report: {str(e)}")
+    
+    def show_print_preview(self, title, content):
+        """Show print preview window"""
+        preview_window = tk.Toplevel(self.window)
+        preview_window.title(f"Print Preview - {title}")
+        preview_window.geometry("600x500")
+        preview_window.configure(bg='white')
+        
+        # Title
+        title_label = tk.Label(
+            preview_window,
+            text=f"🖨️ Print Preview - {title}",
+            font=('Arial', 14, 'bold'),
+            fg='#2c3e50',
+            bg='white'
+        )
+        title_label.pack(pady=10)
+        
+        # Content frame with scrollbar
+        content_frame = tk.Frame(preview_window, bg='white')
+        content_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        # Text widget with scrollbar
+        text_widget = tk.Text(
+            content_frame,
+            font=('Courier', 10),
+            bg='#f8f9fa',
+            fg='#2c3e50',
+            wrap='word',
+            padx=10,
+            pady=2
+        )
+        
+        scrollbar = ttk.Scrollbar(content_frame, orient='vertical', command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        text_widget.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Insert content
+        text_widget.insert('1.0', content)
+        text_widget.configure(state='disabled')
+        
+        # Button frame
+        button_frame = tk.Frame(preview_window, bg='white')
+        button_frame.pack(pady=10)
+        
+        # Print button (simulated)
+        print_btn = tk.Button(
+            button_frame,
+            text="🖨️ Print",
+            font=('Arial', 10, 'bold'),
+            bg='#27ae60',
+            fg='white',
+            cursor='hand2',
+            command=lambda: self.simulate_print(title, preview_window)
+        )
+        print_btn.pack(side='left', padx=5)
+        
+        # Close button
+        close_btn = tk.Button(
+            button_frame,
+            text="Close",
+            font=('Arial', 10, 'bold'),
+            bg='#95a5a6',
+            fg='white',
+            cursor='hand2',
+            command=preview_window.destroy
+        )
+        close_btn.pack(side='left', padx=5)
+    
+    def simulate_print(self, title, window):
+        """Simulate printing process"""
+        try:
+            messagebox.showinfo("Print", f"'{title}' has been sent to printer successfully!")
+            window.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to print: {str(e)}")
+    
     def logout(self):
         if messagebox.askyesno("Confirm", "Are you sure you want to logout?"):
             # Hentikan auto refresh job

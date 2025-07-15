@@ -308,17 +308,6 @@ class UserPanel:
         )
         refresh_btn.pack(side='left', padx=5)
         
-        # Print button
-        print_btn = tk.Button(
-            action_frame,
-            text="🖨️ Print Customer List",
-            font=('Arial', 10, 'bold'),
-            bg='#3498db',
-            fg='white',
-            cursor='hand2',
-            command=self.print_customer_list
-        )
-        print_btn.pack(side='left', padx=5)
     
     def setup_barang_view(self, parent):
         # Title
@@ -399,18 +388,6 @@ class UserPanel:
             command=self.load_barang
         )
         refresh_btn.pack(side='left', padx=5)
-        
-        # Print button
-        print_btn = tk.Button(
-            action_frame,
-            text="🖨️ Print Stock Report",
-            font=('Arial', 10, 'bold'),
-            bg='#3498db',
-            fg='white',
-            cursor='hand2',
-            command=self.print_stock_report
-        )
-        print_btn.pack(side='left', padx=5)
         
         # Check low stock button
         check_stock_btn = tk.Button(
@@ -527,18 +504,6 @@ class UserPanel:
             command=self.print_selected_invoice
         )
         print_invoice_btn.pack(side='left', padx=5)
-        
-        # Print report button
-        print_report_btn = tk.Button(
-            action_frame,
-            text="📊 Print Transaction Report",
-            font=('Arial', 10, 'bold'),
-            bg='#9b59b6',
-            fg='white',
-            cursor='hand2',
-            command=self.print_transaction_report
-        )
-        print_report_btn.pack(side='left', padx=5)
     
     def check_low_stock(self):
         """Check for items with low stock and create notifications"""
@@ -854,72 +819,6 @@ class UserPanel:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to refresh dashboard: {str(e)}")
     
-    def print_customer_list(self):
-        """Print customer list"""
-        try:
-            customers = self.db.get_all_customers()
-            
-            # Create print content
-            print_content = "CUSTOMER LIST REPORT\n"
-            print_content += "=" * 50 + "\n\n"
-            print_content += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            print_content += f"Total Customers: {len(customers)}\n\n"
-            
-            # Add customer data
-            for customer in customers:
-                print_content += f"ID: {customer[0]}\n"
-                print_content += f"Name: {customer[1]}\n"
-                print_content += f"Address: {customer[2]}\n"
-                print_content += f"Phone: {customer[3]}\n"
-                print_content += "-" * 30 + "\n"
-            
-            # Show print preview
-            self.show_print_preview("Customer List Report", print_content)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate customer report: {str(e)}")
-    
-    def print_stock_report(self):
-        """Print stock report"""
-        try:
-            barang = self.db.get_all_barang()
-            
-            # Create print content
-            print_content = "STOCK REPORT\n"
-            print_content += "=" * 50 + "\n\n"
-            print_content += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            print_content += f"Total Items: {len(barang)}\n\n"
-            
-            # Categorize items
-            low_stock_items = []
-            normal_stock_items = []
-            
-            for item in barang:
-                stock = int(item[3])
-                if stock <= 10:
-                    low_stock_items.append(item)
-                else:
-                    normal_stock_items.append(item)
-            
-            # Add low stock section
-            if low_stock_items:
-                print_content += "⚠️ LOW STOCK ITEMS (≤10):\n"
-                print_content += "-" * 30 + "\n"
-                for item in low_stock_items:
-                    print_content += f"ID: {item[0]} | {item[1]} | Stock: {item[3]} | Price: Rp {item[2]:,}\n"
-                print_content += "\n"
-            
-            # Add normal stock section
-            print_content += "NORMAL STOCK ITEMS:\n"
-            print_content += "-" * 30 + "\n"
-            for item in normal_stock_items:
-                print_content += f"ID: {item[0]} | {item[1]} | Stock: {item[3]} | Price: Rp {item[2]:,}\n"
-            
-            # Show print preview
-            self.show_print_preview("Stock Report", print_content)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate stock report: {str(e)}")
     
     def print_selected_invoice(self):
         """Print selected transaction as invoice"""
